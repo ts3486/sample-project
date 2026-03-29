@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pet Insurance ER Diagram</title>
+  <style>
+    body { background: #fff; margin: 0; padding: 10px; font-family: sans-serif; }
+    h1 { text-align: center; color: #333; font-size: 18px; margin: 8px 0; }
+    .mermaid { width: 100%; }
+    .mermaid svg { width: 100%; height: auto; max-width: 100vw; }
+  </style>
+</head>
+<body>
+  <h1>Pet Insurance DB - ER Diagram</h1>
+  <pre class="mermaid">
+erDiagram
+    customers {
+        SERIAL id PK
+        VARCHAR email UK
+        VARCHAR password_hash
+        VARCHAR first_name
+        VARCHAR last_name
+        VARCHAR phone
+        VARCHAR post_code
+        TEXT address
+        TIMESTAMPTZ created_at
+    }
+
+    pets {
+        SERIAL id PK
+        INT customer_id FK
+        VARCHAR name
+        VARCHAR species
+        VARCHAR breed
+        VARCHAR size_class
+        VARCHAR gender
+        DATE date_of_birth
+        BOOLEAN is_neutered
+        BOOLEAN has_microchip
+        VARCHAR microchip_id
+        VARCHAR photo_full_body
+        VARCHAR photo_face
+        VARCHAR vet_clinic_name
+        VARCHAR vet_clinic_phone
+        TEXT pre_existing
+        TIMESTAMPTZ created_at
+    }
+
+    policies {
+        SERIAL id PK
+        INT customer_id FK
+        INT pet_id FK
+        VARCHAR policy_number UK
+        VARCHAR status
+        VARCHAR plan_type
+        INT coverage_ratio
+        BIGINT monthly_premium
+        BIGINT annual_premium
+        VARCHAR reimbursement_type
+        DATE effective_date
+        DATE expiration_date
+        DATE injury_wait_end
+        DATE illness_wait_end
+        DATE cancer_wait_end
+        TIMESTAMPTZ created_at
+    }
+
+    claims {
+        SERIAL id PK
+        INT policy_id FK
+        INT customer_id FK
+        INT pet_id FK
+        VARCHAR claim_number UK
+        VARCHAR category
+        VARCHAR status
+        VARCHAR clinic_name
+        DATE treatment_date
+        VARCHAR diagnosis
+        TEXT treatment_detail
+        BIGINT total_amount
+        BIGINT covered_amount
+        BIGINT reimbursed_amount
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    breed_rates {
+        SERIAL id PK
+        VARCHAR species
+        VARCHAR breed UK
+        VARCHAR size_class
+        DECIMAL risk_factor
+    }
+
+    customers ||--o{ pets : "owns"
+    customers ||--o{ policies : "holds"
+    customers ||--o{ claims : "files"
+    pets ||--o{ policies : "insured by"
+    pets ||--o{ claims : "treated"
+    policies ||--o{ claims : "claimed against"
+    breed_rates }o--o{ pets : "classifies"
+</pre>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'default',
+      er: { useMaxWidth: true, fontSize: 11 }
+    });
+  </script>
+</body>
+</html>
