@@ -1,0 +1,439 @@
+# api/openapi.yaml
+openapi: "3.0.3"
+info:
+  title: Pet Insurance API — ペット保険見積もり・契約管理
+  version: "1.0.0"
+  description: API for pet insurance quoting, policy management, and claims processing.
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+
+paths:
+  /health:
+    get:
+      operationId: healthCheck
+      summary: Health check
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    # --- Auth ---
+    RegisterRequest:
+      type: object
+      required: [email, password, first_name, last_name]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        first_name:
+          type: string
+        last_name:
+          type: string
+        phone:
+          type: string
+        post_code:
+          type: string
+        address:
+          type: string
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [token, customer]
+      properties:
+        token:
+          type: string
+        customer:
+          $ref: "#/components/schemas/Customer"
+
+    # --- Customer ---
+    Customer:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        phone:
+          type: string
+        post_code:
+          type: string
+        address:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    # --- Pet ---
+    Species:
+      type: string
+      enum: [dog, cat]
+
+    SizeClass:
+      type: string
+      enum: [small, medium, large]
+
+    Pet:
+      type: object
+      required: [name, species, breed, size_class, gender, date_of_birth]
+      properties:
+        id:
+          type: integer
+        customer_id:
+          type: integer
+        name:
+          type: string
+        species:
+          $ref: "#/components/schemas/Species"
+        breed:
+          type: string
+        size_class:
+          $ref: "#/components/schemas/SizeClass"
+        gender:
+          type: string
+          enum: [male, female]
+        date_of_birth:
+          type: string
+          format: date
+        is_neutered:
+          type: boolean
+          default: false
+        has_microchip:
+          type: boolean
+          default: false
+        microchip_id:
+          type: string
+        photo_full_body:
+          type: string
+        photo_face:
+          type: string
+        vet_clinic_name:
+          type: string
+        vet_clinic_phone:
+          type: string
+        pre_existing:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    CreatePetRequest:
+      type: object
+      required: [name, species, breed, size_class, gender, date_of_birth]
+      properties:
+        name:
+          type: string
+        species:
+          $ref: "#/components/schemas/Species"
+        breed:
+          type: string
+        size_class:
+          $ref: "#/components/schemas/SizeClass"
+        gender:
+          type: string
+          enum: [male, female]
+        date_of_birth:
+          type: string
+          format: date
+        is_neutered:
+          type: boolean
+        has_microchip:
+          type: boolean
+        microchip_id:
+          type: string
+        photo_full_body:
+          type: string
+        photo_face:
+          type: string
+        vet_clinic_name:
+          type: string
+        vet_clinic_phone:
+          type: string
+        pre_existing:
+          type: string
+
+    # --- Breed ---
+    BreedRate:
+      type: object
+      properties:
+        species:
+          $ref: "#/components/schemas/Species"
+        breed:
+          type: string
+        size_class:
+          $ref: "#/components/schemas/SizeClass"
+        risk_factor:
+          type: number
+          format: double
+
+    # --- Quote (stateless calculation) ---
+    PlanType:
+      type: string
+      enum: [next, light, mini, vip]
+
+    QuoteRequest:
+      type: object
+      required: [pet, plan_type, coverage_ratio]
+      properties:
+        pet:
+          $ref: "#/components/schemas/CreatePetRequest"
+        plan_type:
+          $ref: "#/components/schemas/PlanType"
+        coverage_ratio:
+          type: integer
+          enum: [50, 70, 90]
+        deductible:
+          type: integer
+          enum: [0, 2500, 5000, 7500, 10000]
+          default: 0
+        is_online:
+          type: boolean
+          default: true
+        pet_count:
+          type: integer
+          default: 1
+
+    DailyLimits:
+      type: object
+      properties:
+        outpatient_daily_limit:
+          type: integer
+          format: int64
+        outpatient_days_per_year:
+          type: integer
+        hospital_daily_limit:
+          type: integer
+          format: int64
+        hospital_days_per_year:
+          type: integer
+        surgery_per_case_limit:
+          type: integer
+          format: int64
+        surgery_cases_per_year:
+          type: integer
+
+    DiscountType:
+      type: string
+      enum: [multi_pet, microchip, internet, annual_pay, neutered, continuation, no_claim]
+
+    AppliedDiscount:
+      type: object
+      properties:
+        type:
+          $ref: "#/components/schemas/DiscountType"
+        name:
+          type: string
+        amount:
+          type: integer
+          format: int64
+
+    QuoteResult:
+      type: object
+      properties:
+        plan_type:
+          $ref: "#/components/schemas/PlanType"
+        coverage_ratio:
+          type: integer
+        deductible:
+          type: integer
+          format: int64
+        base_premium:
+          type: integer
+          format: int64
+        final_premium:
+          type: integer
+          format: int64
+        monthly_premium:
+          type: integer
+          format: int64
+        daily_limits:
+          $ref: "#/components/schemas/DailyLimits"
+        annual_limit:
+          type: integer
+          format: int64
+        discounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/AppliedDiscount"
+
+    # --- Policy ---
+    PolicyStatus:
+      type: string
+      enum: [pending, waiting, active, cancelled, expired, suspended]
+
+    ReimbursementType:
+      type: string
+      enum: [counter, post_visit]
+
+    Policy:
+      type: object
+      properties:
+        id:
+          type: integer
+        customer_id:
+          type: integer
+        pet_id:
+          type: integer
+        policy_number:
+          type: string
+        status:
+          $ref: "#/components/schemas/PolicyStatus"
+        plan_type:
+          $ref: "#/components/schemas/PlanType"
+        coverage_ratio:
+          type: integer
+        monthly_premium:
+          type: integer
+          format: int64
+        annual_premium:
+          type: integer
+          format: int64
+        reimbursement_type:
+          $ref: "#/components/schemas/ReimbursementType"
+        effective_date:
+          type: string
+          format: date
+        expiration_date:
+          type: string
+          format: date
+        injury_wait_end:
+          type: string
+          format: date
+        illness_wait_end:
+          type: string
+          format: date
+        cancer_wait_end:
+          type: string
+          format: date
+        created_at:
+          type: string
+          format: date-time
+
+    CreatePolicyRequest:
+      type: object
+      required: [pet_id, plan_type, coverage_ratio, reimbursement_type]
+      properties:
+        pet_id:
+          type: integer
+        plan_type:
+          $ref: "#/components/schemas/PlanType"
+        coverage_ratio:
+          type: integer
+          enum: [50, 70, 90]
+        deductible:
+          type: integer
+          default: 0
+        reimbursement_type:
+          $ref: "#/components/schemas/ReimbursementType"
+
+    # --- Claim ---
+    ClaimCategory:
+      type: string
+      enum: [outpatient, hospital, surgery]
+
+    ClaimStatus:
+      type: string
+      enum: [submitted, under_review, approved, denied, paid, closed]
+
+    Claim:
+      type: object
+      properties:
+        id:
+          type: integer
+        policy_id:
+          type: integer
+        customer_id:
+          type: integer
+        pet_id:
+          type: integer
+        claim_number:
+          type: string
+        category:
+          $ref: "#/components/schemas/ClaimCategory"
+        status:
+          $ref: "#/components/schemas/ClaimStatus"
+        clinic_name:
+          type: string
+        treatment_date:
+          type: string
+          format: date
+        diagnosis:
+          type: string
+        treatment_detail:
+          type: string
+        total_amount:
+          type: integer
+          format: int64
+        covered_amount:
+          type: integer
+          format: int64
+        reimbursed_amount:
+          type: integer
+          format: int64
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    FileClaimRequest:
+      type: object
+      required: [policy_id, category, clinic_name, treatment_date, diagnosis, total_amount]
+      properties:
+        policy_id:
+          type: integer
+        category:
+          $ref: "#/components/schemas/ClaimCategory"
+        clinic_name:
+          type: string
+        treatment_date:
+          type: string
+          format: date
+        diagnosis:
+          type: string
+        treatment_detail:
+          type: string
+        total_amount:
+          type: integer
+          format: int64

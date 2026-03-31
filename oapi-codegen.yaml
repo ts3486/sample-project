@@ -1,0 +1,7 @@
+# oapi-codegen.yaml
+package: generated
+output: internal/generated/api.gen.go
+generate:
+  echo-server: true    # generates Echo handler interfaces
+  models: true         # generates Go structs from schemas
+  embedded-spec: true  # embeds the spec for runtime validation
